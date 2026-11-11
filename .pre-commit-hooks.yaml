@@ -1,0 +1,6 @@
+- id: pin-audit
+  name: CircuitPython pin ownership audit
+  entry: pin-audit
+  language: python
+  types: [python]
+  description: Find potential overlapping pin allocations without executing firmware.

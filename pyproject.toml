@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "circuitpython-pin-audit"
+version = "0.1.0"
+description = "Find potential CircuitPython pin ownership conflicts without executing firmware."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Shiva Birudaraju"}]
+keywords = ["circuitpython", "static-analysis", "gpio", "lint", "hardware"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.urls]
+Repository = "https://github.com/birudarajushiva/circuitpython-pin-audit"
+Issues = "https://github.com/birudarajushiva/circuitpython-pin-audit/issues"
+
+[project.scripts]
+pin-audit = "pin_audit.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
