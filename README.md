@@ -116,6 +116,11 @@ To add a GitHub Actions step, install a reviewed commit of this tool and run
 [integration guide](docs/integration.md) for a complete workflow and safe adoption
 when existing firmware already has findings.
 
+For a packaged workflow step, use the companion
+[CircuitPython Pin Audit Action](https://github.com/birudarajushiva/circuitpython-pin-audit-action).
+It pins the analyzer revision, runs Python in isolated mode, produces source
+annotations and a JSON report, and defaults to strict coverage checks.
+
 ## Boundaries you should know
 
 This is a single-file symbolic analysis, not a full Python interpreter or a
