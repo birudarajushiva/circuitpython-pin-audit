@@ -1,9 +1,11 @@
 import contextlib
 import io
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 from pin_audit.cli import main, render
 from pin_audit import Diagnostic, Report
@@ -69,6 +71,42 @@ class CLITests(unittest.TestCase):
         self.file('.venv/bad.py', BAD)
         status, out, _ = self.run_cli(str(self.root), '--exclude', 'fixtures', '--format', 'json')
         self.assertEqual(status, 0)
+        self.assertEqual(len(json.loads(out)['files']), 1)
+
+    def test_unreadable_nested_directory_is_not_partial_success(self):
+        self.file('good.py', GOOD)
+        self.file('private/bad.py', BAD)
+        blocked = self.root / 'private'
+        original_scandir = os.scandir
+
+        def scandir(path):
+            if Path(path) == blocked:
+                raise PermissionError(13, 'Permission denied', str(path))
+            return original_scandir(path)
+
+        with mock.patch('pin_audit.cli.os.scandir', side_effect=scandir):
+            status, out, err = self.run_cli(str(self.root), '--format', 'json')
+        self.assertEqual(status, 2)
+        self.assertEqual(out, '')
+        self.assertIn('Permission denied', err)
+        self.assertIn('private', err)
+
+    def test_excluded_unreadable_directory_is_not_scanned(self):
+        self.file('good.py', GOOD)
+        self.file('private/bad.py', BAD)
+        blocked = self.root / 'private'
+        original_scandir = os.scandir
+
+        def scandir(path):
+            if Path(path) == blocked:
+                self.fail('excluded directory must not be scanned')
+            return original_scandir(path)
+
+        with mock.patch('pin_audit.cli.os.scandir', side_effect=scandir):
+            status, out, err = self.run_cli(
+                str(self.root), '--exclude', 'private', '--format', 'json'
+            )
+        self.assertEqual(status, 0, err)
         self.assertEqual(len(json.loads(out)['files']), 1)
 
     def test_repeated_inputs_are_deduplicated(self):
