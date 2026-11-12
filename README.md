@@ -108,6 +108,8 @@ Directories are scanned recursively for `.py` files. Each file is analyzed as an
 **independent entrypoint**; resources in separate files are not combined.
 Duplicate input paths are deduplicated. Common environment/build folders and
 symlinks are skipped during discovery; explicitly supplied symlinks are rejected.
+If a directory cannot be scanned, the command exits **2** rather than reporting
+success for a partial scan. Intentionally excluded folders are not scanned.
 Files are limited to 2 MiB. Prefer scanning your entrypoint explicitly when the
 directory also contains libraries or alternative examples.
 

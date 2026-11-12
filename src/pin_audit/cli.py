@@ -40,6 +40,11 @@ def load_aliases(path: Path | None) -> list[list[str]]:
 def discover(paths: Sequence[str], excludes: Sequence[str]) -> list[Path]:
     selected: dict[str, Path] = {}
 
+    def scan_error(error: OSError) -> None:
+        # os.walk otherwise suppresses scandir errors, yielding a partial scan
+        # indistinguishable from a complete, conflict-free result.
+        raise error
+
     def excluded(path: Path, root: Path) -> bool:
         relative = path.relative_to(root).as_posix()
         return any(fnmatch.fnmatchcase(relative, p) or fnmatch.fnmatchcase(path.name, p) for p in excludes)
@@ -51,7 +56,7 @@ def discover(paths: Sequence[str], excludes: Sequence[str]) -> list[Path]:
         if root.is_file():
             selected[str(root.resolve())] = root
         elif root.is_dir():
-            for directory, folders, files in os.walk(root, followlinks=False):
+            for directory, folders, files in os.walk(root, followlinks=False, onerror=scan_error):
                 parent = Path(directory)
                 folders[:] = sorted(f for f in folders if f not in SKIP_DIRS and not
                                      (parent / f).is_symlink() and not excluded(parent / f, root))
