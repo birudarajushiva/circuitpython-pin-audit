@@ -300,7 +300,7 @@ class Analyzer:
             for alias in list(state.names):
                 if state.names[alias] is previous:
                     state.names[alias] = UNKNOWN
-            self.emit("PA101", target, "Sequence assignment is not statically resolved.")
+            self.emit("PA101", target, "Sequence item mutation is not statically resolved.")
 
     def block(self, nodes: list[ast.stmt], states: list[State]) -> list[State]:
         for node in nodes:
@@ -336,6 +336,18 @@ class Analyzer:
         elif isinstance(node, ast.AnnAssign):
             self.bind(node.target, self.value(node.value, state), state)
         elif isinstance(node, ast.AugAssign):
+            # RHS expressions execute even when the augmented result is unknown.
+            self.value(node.value, state)
+            if isinstance(node.target, ast.Name):
+                previous = state.names.get(node.target.id)
+                if isinstance(previous, tuple):
+                    # Lists and tuples share a symbolic representation. In-place
+                    # list operations can affect every alias, so conservatively
+                    # forget the sequence rather than keep stale pin contents.
+                    for alias in list(state.names):
+                        if state.names[alias] is previous:
+                            state.names[alias] = UNKNOWN
+                    self.emit("PA101", node, "Augmented sequence assignment is not statically resolved.")
             self.bind(node.target, UNKNOWN, state)
         elif isinstance(node, ast.Expr):
             self.value(node.value, state)
@@ -369,6 +381,8 @@ class Analyzer:
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     state.names.pop(target.id, None)
+                elif isinstance(target, ast.Subscript):
+                    self.bind(target, UNKNOWN, state)
         elif isinstance(node, SKIPPED_BLOCKS):
             if self.relevant(node, state):
                 self.emit("PA101", node, "Loop/try/match/async hardware operations are not analyzed.")

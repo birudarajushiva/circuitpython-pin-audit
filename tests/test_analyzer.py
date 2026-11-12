@@ -295,6 +295,54 @@ class PinTests(unittest.TestCase):
         ''')
         self.assertTrue(any(d.code == "PA100" for d in report.diagnostics))
 
+    def test_augmented_sequence_assignment_invalidates_aliases(self):
+        report = self.report('''
+            import board, keypad, digitalio
+            pins = [board.D0]
+            alias = pins
+            pins += [board.D1]
+            led = digitalio.DigitalInOut(board.D1)
+            keys = keypad.Keys(alias, value_when_pressed=False)
+        ''')
+        self.assertTrue(report.incomplete)
+        self.assertTrue(any(d.code == "PA100" for d in report.diagnostics))
+        self.assertFalse(report.conflicts)
+
+    def test_deleted_sequence_entry_does_not_leave_stale_claim(self):
+        report = self.report('''
+            import board, keypad, digitalio
+            pins = [board.D0, board.D1]
+            alias = pins
+            del pins[0]
+            led = digitalio.DigitalInOut(board.D0)
+            keys = keypad.Keys(alias, value_when_pressed=False)
+        ''')
+        self.assertTrue(report.incomplete)
+        self.assertFalse(report.conflicts)
+        self.assertTrue(any(d.code == "PA100" for d in report.diagnostics))
+
+    def test_augmented_assignment_evaluates_rhs_allocation(self):
+        report = self.report('''
+            import board, digitalio
+            result = 0
+            result += digitalio.DigitalInOut(board.D0)
+            led = digitalio.DigitalInOut(board.D0)
+        ''')
+        self.assertEqual(report.allocations, 2)
+        self.assertEqual(len(report.conflicts), 1)
+
+    def test_deleting_name_preserves_sequence_alias(self):
+        report = self.report('''
+            import board, keypad, digitalio
+            pins = [board.D0]
+            alias = pins
+            del pins
+            keys = keypad.Keys(alias, value_when_pressed=False)
+            led = digitalio.DigitalInOut(board.D0)
+        ''')
+        self.assertFalse(report.incomplete)
+        self.assertEqual(len(report.conflicts), 1)
+
     def test_imports_inside_function_are_coverage_gap(self):
         report = self.report('''
             def setup():

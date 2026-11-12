@@ -19,8 +19,12 @@ and decorator execution is not modeled. Imports inside skipped blocks are not
 resolved. Star imports, expanded call arguments, implicit `board.I2C/SPI/UART`
 pinouts, and unresolved pin expressions generate coverage warnings when detected.
 
-Known mutating sequence methods and subscript assignment invalidate sequence
-aliases, but Python's complete alias/mutation semantics are not implemented.
+Known mutating sequence methods, subscript assignment/deletion, and augmented
+sequence assignment invalidate sequence aliases and produce coverage warnings.
+Lists and tuples currently share a symbolic representation, so augmented tuple
+assignment also invalidates aliases conservatively. Deleting a variable name
+does not change other aliases. Python's complete alias/mutation semantics are
+not implemented.
 Passing a sequence through an arbitrary helper may mutate it without being
 detected. A method alias such as `release = bus.deinit; release()` is not modeled
 as a release. The same limitation applies to release inside an external helper.

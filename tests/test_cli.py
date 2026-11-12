@@ -82,6 +82,17 @@ class CLITests(unittest.TestCase):
         self.assertEqual(self.run_cli(path)[0], 0)
         self.assertEqual(self.run_cli(path, '--strict')[0], 1)
 
+    def test_strict_rejects_stale_alias_after_augmented_list_mutation(self):
+        path = self.file('mutated.py', '''import board, keypad
+pins = [board.D0]
+alias = pins
+pins += [board.D1]
+keys = keypad.Keys(alias, value_when_pressed=False)
+''')
+        status, out, _ = self.run_cli(path, '--strict', '--format', 'json')
+        self.assertEqual(status, 1)
+        self.assertTrue(json.loads(out)['files'][0]['incomplete'])
+
     def test_explicit_alias_file(self):
         path = self.file('alias.py', GOOD + 'b = digitalio.DigitalInOut(board.LED)\n')
         config = self.file('pins.json', '{"aliases": [["D0", "LED"]]}')
